@@ -4,6 +4,7 @@ pipeline {
     environment {
         FRONTEND_DIR = 'frontend'
         BACKEND_DIR = 'backend'
+        EC2_IP = '52.221.249.159'
         FRONTEND_DOCKER_IMAGE = 'mochimocchi/pizza-frontend-chuzz:latest'
         EC2_FRONTEND = 'ubuntu@52.221.249.159'
         EC2_BACKEND = 'ubuntu@52.221.249.159'
