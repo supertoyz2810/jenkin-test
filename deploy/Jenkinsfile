@@ -37,7 +37,7 @@ pipeline {
 
         stage('Deploy Frontend to EC2') {
             steps {
-                sshagent(credentials: ['private-key']) {
+                sshagent(credentials: ['devops']) {
                     sh '''
                         ssh -o StrictHostKeyChecking=no $EC2_FRONTEND "
                             docker pull $FRONTEND_DOCKER_IMAGE &&
@@ -59,7 +59,7 @@ pipeline {
 
         stage('Deploy Backend to EC2') {
             steps {
-                sshagent(credentials: ['private-key']) {
+                sshagent(credentials: ['devops']) {
                     sh '''
                         scp $BACKEND_DIR/build/libs/backend-1.0.0.jar $EC2_BACKEND:/home/ubuntu/backend.jar
                         ssh -o StrictHostKeyChecking=no $EC2_BACKEND "
