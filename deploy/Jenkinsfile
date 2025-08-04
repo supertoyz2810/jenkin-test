@@ -37,9 +37,13 @@ pipeline {
 
         stage('Deploy Frontend to EC2') {
             steps {
-                sshagent(credentials: ['devops']) {
+                withCredentials([sshUserPrivateKey(
+                    credentialsId: 'ec2-devops-key',
+                    keyFileVariable: 'EC2_KEY',
+                    usernameVariable: 'EC2_USER'
+                )]) {
                     sh '''
-                        ssh -o StrictHostKeyChecking=no $EC2_FRONTEND "
+                        ssh -o StrictHostKeyChecking=no -i $EC2_KEY $EC2_USER@$EC2_IP "
                             docker pull $FRONTEND_DOCKER_IMAGE &&
                             docker rm -f pizza-frontend || true &&
                             docker run -d --name pizza-frontend -p 80:3000 $FRONTEND_DOCKER_IMAGE
@@ -59,11 +63,14 @@ pipeline {
 
         stage('Deploy Backend to EC2') {
             steps {
-                sshagent(credentials: ['devops']) {
+                withCredentials([sshUserPrivateKey(
+                    credentialsId: 'ec2-devops-key',
+                    keyFileVariable: 'EC2_KEY',
+                    usernameVariable: 'EC2_USER'
+                )]) {
                     sh '''
-                        scp $BACKEND_DIR/build/libs/backend-1.0.0.jar $EC2_BACKEND:/home/ubuntu/backend.jar
-                        ssh -o StrictHostKeyChecking=no $EC2_BACKEND "
-                            set -x
+                        scp -o StrictHostKeyChecking=no -i $EC2_KEY $BACKEND_DIR/build/libs/backend-1.0.0.jar $EC2_USER@$EC2_IP:/home/ubuntu/backend.jar
+                        ssh -o StrictHostKeyChecking=no -i $EC2_KEY $EC2_USER@$EC2_IP "
                             pkill -f 'java -jar' || true
                             nohup java -jar /home/ubuntu/backend.jar > backend.log 2>&1 &
                             sleep 3
