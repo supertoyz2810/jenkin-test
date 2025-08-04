@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <title>Đặt bàn trực tuyến</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+  <style>
+    body {
+      background: url('/bg.jpg') no-repeat center center fixed;
+      background-size: cover;
+      color: white;
+      text-shadow: 0 0 5px black;
+    }
+    .container {
+      margin-top: 10%;
+      background-color: rgba(0, 0, 0, 0.4);
+      padding: 2rem;
+      border-radius: 10px;
+    }
+    .btn-primary {
+      background-color: #0066cc;
+      border: none;
+    }
+  </style>
+</head>
+<body>
+  <div class="container text-center">
+    <h1 class="mb-4">Đặt bàn trực tuyến</h1>
+    <form id="bookingForm">
+      <div class="row mb-3">
+        <div class="col">
+          <select class="form-select" name="city" required>
+            <option value="">Chọn địa điểm</option>
+            <option>Hồ Chí Minh</option>
+            <option>Hà Nội</option>
+            <option>Đà Nẵng</option>
+            <option>Nha Trang</option>
+            <option>Hải Phòng</option>
+            <option>Bình Dương</option>
+          </select>
+        </div>
+        <div class="col">
+          <select class="form-select" name="branch" required>
+            <option>Tất cả nhà hàng</option>
+          </select>
+        </div>
+        <div class="col">
+          <select class="form-select" name="people" required>
+            <option value="2">2 Người</option>
+            <option value="3">3 Người</option>
+            <option value="4">4 Người</option>
+            <option value="5">5 Người</option>
+          </select>
+        </div>
+        <div class="col">
+          <input type="date" class="form-control" name="date" required>
+        </div>
+        <div class="col">
+          <input type="time" class="form-control" name="time" required>
+        </div>
+        <div class="col">
+          <button type="submit" class="btn btn-primary">Tìm</button>
+        </div>
+      </div>
+    </form>
+
+    <div id="result" class="mt-4"></div>
+  </div>
+
+  <script>
+    document.getElementById("bookingForm").addEventListener("submit", async function(e) {
+      e.preventDefault();
+      const form = e.target;
+      const data = {
+        location: form.city.value + ' - ' + form.branch.value
+      };
+
+      const res = await fetch('/backend/reserve', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(data)
+      });
+
+      const text = await res.text();
+      document.getElementById("result").innerText = text;
+    });
+  </script>
+</body>
+</html>

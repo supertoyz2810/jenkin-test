@@ -1,0 +1,87 @@
+pipeline {
+    agent any
+
+    environment {
+        FRONTEND_DIR = 'frontend'
+        BACKEND_DIR = 'backend'
+        FRONTEND_DOCKER_IMAGE = 'chuzynyan/pizza-frontend-chuzz:latest'
+        EC2_FRONTEND = 'ubuntu@52.221.249.159'
+        EC2_BACKEND = 'ubuntu@52.221.249.159'
+    }
+
+    stages {
+        // stage('Checkout') {
+        //     steps {
+        //         git url: 'https://github.com/your-org/pizza-reservation-demo.git'
+        //     }
+        // }
+
+        stage('Build Frontend Docker Image') {
+            steps {
+                dir("${FRONTEND_DIR}") {
+                    sh 'docker build -t $FRONTEND_DOCKER_IMAGE .'
+                }
+            }
+        }
+
+        stage('Push Frontend Docker Image') {
+            steps {
+                withCredentials([usernamePassword(credentialsId: 'dockerhub-creds', usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASS')]) {
+                    sh '''
+                        echo $DOCKER_PASS | docker login -u $DOCKER_USER --password-stdin
+                        docker push $FRONTEND_DOCKER_IMAGE
+                    '''
+                }
+            }
+        }
+
+        stage('Deploy Frontend to EC2') {
+            steps {
+                sshagent(credentials: ['private-key']) {
+                    sh '''
+                        ssh -o StrictHostKeyChecking=no $EC2_FRONTEND "
+                            docker pull $FRONTEND_DOCKER_IMAGE &&
+                            docker rm -f pizza-frontend || true &&
+                            docker run -d --name pizza-frontend -p 80:3000 $FRONTEND_DOCKER_IMAGE
+                        "
+                    '''
+                }
+            }
+        }
+
+        stage('Build Backend JAR') {
+            steps {
+                dir("${BACKEND_DIR}") {
+                    sh './gradlew clean build'
+                }
+            }
+        }
+
+        stage('Deploy Backend to EC2') {
+            steps {
+                sshagent(credentials: ['private-key']) {
+                    sh '''
+                        scp $BACKEND_DIR/build/libs/backend-1.0.0.jar $EC2_BACKEND:/home/ubuntu/backend.jar
+                        ssh -o StrictHostKeyChecking=no $EC2_BACKEND "
+                            set -x
+                            pkill -f 'java -jar' || true
+                            nohup java -jar /home/ubuntu/backend.jar > backend.log 2>&1 &
+                            sleep 3
+                            ps -ef | grep java | grep -v grep
+                            tail -n 10 backend.log
+                        "
+                    '''
+                }
+            }
+        }
+    }
+
+    post {
+        success {
+            echo '✅ Deployment completed successfully!'
+        }
+        failure {
+            echo '❌ Deployment failed.'
+        }
+    }
+}
